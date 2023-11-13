@@ -1,4 +1,13 @@
-import { Controller, Get, NotFoundException, Param } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  NotFoundException,
+  Param,
+  Patch,
+  Post,
+} from '@nestjs/common';
 import { PostsService } from './posts.service';
 
 interface PostModel {
@@ -34,11 +43,13 @@ let posts: PostModel[] = [
     content: '종합운동장에서 공연중인 로제',
     likeCount: 1000000,
     commentCount: 999999,
-  }
+  },
 ];
+
 @Controller('posts')
 export class PostsController {
   constructor(private readonly postsService: PostsService) {}
+
   @Get()
   getPosts(): PostModel[] {
     return posts;
@@ -48,12 +59,71 @@ export class PostsController {
   // 모든 패스 파라미터는 별도의 처리를 하지 않는 이상 string으로 받게 된다.
   getPost(@Param('id') id: string): PostModel {
     const post = posts.find((post) => post.id === +id);
-
-    if(!post) {
+    if (!post) {
       // nestjs에서 기본으로 제공해주는 에러 타입
       throw new NotFoundException();
     }
+    return post;
+  }
+
+  @Post()
+  postPost(
+    @Body('author') author: string,
+    @Body('title') title: string,
+    @Body('content') content: string,
+  ) {
+    const post = {
+      id: posts[posts.length - 1].id + 1,
+      author,
+      title,
+      content,
+      likeCount: 0,
+      commentCount: 0,
+    };
+
+    posts = [...posts, post];
+    return post;
+  }
+
+  @Patch(':id')
+  patchPost(
+    @Param('id') id: string,
+    @Body('author') author?: string,
+    @Body('title') title?: string,
+    @Body('content') content?: string,
+  ) {
+    const post = posts.find((post) => post.id === +id);
+
+    if (!post) {
+      throw new NotFoundException();
+    }
+
+    if (author) {
+      post.author = author;
+    }
+
+    if (title) {
+      post.title = title;
+    }
+
+    if (content) {
+      post.content = content;
+    }
+
+    posts = posts.map((prevPost) => (prevPost.id === +id ? post : prevPost));
 
     return post;
+  }
+
+  @Delete(':id')
+  deletePost(@Param('id') id: string) {
+    const post = posts.find((post) => post.id === +id);
+
+    if (!post) {
+      throw new NotFoundException();
+    }
+    posts = posts.filter((post) => post.id !== +id);
+
+    return id;
   }
 }
